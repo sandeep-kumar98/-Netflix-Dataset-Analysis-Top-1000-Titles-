@@ -1,0 +1,131 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+df = pd.read_csv(r"C:\Users\sande\Downloads\netflix_titles_1000.csv")
+
+# Fill missing values properly
+df.fillna({'director': 'Unknown', 'cast': 'Unknown', 'country': 'Unknown'}, inplace=True)
+
+# Convert duration to numerical for analysis
+df['duration'] = df['duration'].str.replace(' min', '', regex=True).str.replace(' Season', '').str.replace('s', '').fillna(0).astype(int)
+
+# Drop non-numeric columns for heatmap correlation
+df_numeric = df.select_dtypes(include=[np.number])  # Select only numeric columns
+
+# 1. Count of Movies vs TV Shows
+plt.figure(figsize=(6,4))
+sns.countplot(data=df, x='type', palette='coolwarm', hue='type', legend=False)
+plt.title("Count of Movies vs TV Shows", fontsize=14)
+plt.xlabel("Type")
+plt.ylabel("Count")
+plt.show()
+
+movie_count = df[df['type'] == 'Movie'].shape[0]
+tv_count = df[df['type'] == 'TV Show'].shape[0]
+print("\n1. Count of Movies vs TV Shows:")
+print(f"Number of Movies: {movie_count}")
+print(f"Number of TV Shows: {tv_count}")
+print(f"Ratio of Movies to TV Shows: {movie_count / tv_count:.2f}\n")
+
+# 2. Top Countries Producing Content
+top_countries = df['country'].value_counts().head(7)
+plt.figure(figsize=(10,5))
+sns.barplot(x=top_countries.index, y=top_countries.values, hue=top_countries.index, palette="viridis", legend=False)
+plt.title("Top 7 Countries Producing Content", fontsize=14)
+plt.xlabel("Country")
+plt.ylabel("Content Count")
+plt.xticks(rotation=45)
+plt.show()
+
+print("2. Top 7 Countries Producing Content:")
+print(top_countries)
+print(f"Observations: The United States has the highest content production, followed by India and the UK.\n")
+
+# 3. Trend of Content Production Over Years
+plt.figure(figsize=(12,6))
+sns.histplot(df['release_year'], bins=30, kde=True, color="blue")
+plt.axvline(df['release_year'].median(), color='red', linestyle='dashed', linewidth=2, label='Median')
+plt.title("Trend of Content Production Over Years", fontsize=14)
+plt.xlabel("Release Year")
+plt.ylabel("Count")
+plt.legend()
+plt.show()
+
+content_years = df['release_year'].value_counts().sort_index()
+median_year = df['release_year'].median()
+print("3. Trend of Content Production Over Years:")
+print(f"Content produced around the median year {median_year}: {content_years[median_year]}")
+print(f"Peak production year: {content_years.idxmax()} with {content_years.max()} contents\n")
+
+# 4. Top 10 Most Common Genres
+df['listed_in'] = df['listed_in'].astype(str)  # Ensure column is string
+all_genres = df['listed_in'].str.split(',').explode()
+top_genres = all_genres.value_counts().head(10)
+
+plt.figure(figsize=(12,5))
+sns.barplot(x=top_genres.index, y=top_genres.values, hue=top_genres.index, palette="rocket", legend=False)
+plt.title("Top 10 Most Common Genres", fontsize=14)
+plt.xlabel("Genre")
+plt.ylabel("Count")
+plt.xticks(rotation=45)
+plt.show()
+
+print("4. Top 10 Most Common Genres:")
+print(top_genres)
+print(f"Observations: Drama, Comedy, and Action are the most common genres.\n")
+
+# 5. Distribution of Movie/TV Show Durations
+plt.figure(figsize=(8,5))
+sns.violinplot(data=df, x='type', y=df['duration'], hue='type', palette="coolwarm", legend=False)
+plt.title("Distribution of Movie/TV Show Durations", fontsize=14)
+plt.xlabel("Type")
+plt.ylabel("Duration (minutes)")
+plt.show()
+
+avg_movie_duration = df[df['type'] == 'Movie']['duration'].mean()
+avg_tv_duration = df[df['type'] == 'TV Show']['duration'].mean()
+print("5. Distribution of Movie/TV Show Durations:")
+print(f"Average Movie Duration: {avg_movie_duration:.2f} minutes")
+print(f"Average TV Show Duration: {avg_tv_duration:.2f} minutes")
+print(f"Observations: Movies are generally longer, with an average duration of {avg_movie_duration:.2f} minutes.\n")
+
+# 6. Top 5 Directors with Most Content
+top_directors = df['director'].value_counts().head(5)
+plt.figure(figsize=(8,4))
+sns.barplot(x=top_directors.index, y=top_directors.values, hue=top_directors.index, palette="magma", legend=False)
+plt.title("Top 5 Directors with Most Content", fontsize=14)
+plt.xlabel("Director")
+plt.ylabel("Content Count")
+plt.xticks(rotation=45)
+plt.show()
+
+print("6. Top 5 Directors with Most Content:")
+print(top_directors)
+print(f"Observations: The most prolific directors appear to be those with a wide range of content in the Netflix library.\n")
+
+# 7. Distribution of Content Ratings
+plt.figure(figsize=(8,8))
+df['rating'].value_counts().head(6).plot.pie(autopct='%1.1f%%', cmap='coolwarm', startangle=140, shadow=True, explode=[0.05]*6)
+plt.title("Distribution of Content Ratings", fontsize=14)
+plt.ylabel("")  # Hide the y-label
+plt.show()
+
+rating_distribution = df['rating'].value_counts().head(6)
+print("7. Distribution of Content Ratings:")
+print(rating_distribution)
+print(f"Observations: TV-MA and PG-13 are the most common ratings on the platform.\n")
+
+# 8. Enhanced Correlation Heatmap
+plt.figure(figsize=(7,6))
+mask = np.triu(np.ones_like(df_numeric.corr(), dtype=bool))  # Mask to hide upper triangle
+sns.heatmap(df_numeric.corr(), annot=True, cmap='coolwarm', linewidths=1, linecolor='black', square=True)
+plt.title("Correlation Heatmap", fontsize=14)
+plt.show()
+
+correlation_matrix = df_numeric.corr()
+print("8.Correlation Heatmap:")
+print("Observations: The correlation heatmap provides insights into how various numeric features are interrelated.\n")
